@@ -21,7 +21,7 @@ function crc32(bytes) {
 }
 let offset = 0;
 const locals = [], central = [];
-const entries = files(source);
+const entries = [...files(source), { name: 'LICENSE', bytes: fs.readFileSync(path.join(root, 'LICENSE')) }];
 for (const entry of entries) {
   const name = Buffer.from(entry.name);
   const crc = crc32(entry.bytes);

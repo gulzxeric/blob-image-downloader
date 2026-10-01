@@ -1,25 +1,29 @@
-# Blob 图片顺序下载
+# Blob Image Downloader
 
-一个轻量的 Chrome / Edge 浏览器扩展：把当前网页中已加载、可见的 **blob 图片**按阅读顺序批量保存。源自控制台下载脚本，使用 Manifest V3，无打包工具，无运行时依赖。
+**English** · [简体中文](README.zh-CN.md)
 
-![插件弹窗](docs/popup.png)
+Save the current page's loaded, visible **blob images** in reading order: top to bottom, then left to right within each row. A lightweight Manifest V3 extension for Chrome and Edge, based on a browser-console download script.
 
-## 安装
+No build step, no runtime dependencies, and no background scanning of every website. The current popup interface is in Simplified Chinese.
 
-1. 下载 [最新版本 ZIP](https://github.com/gulzxeric/blob-image-downloader/releases/latest)，解压到一个固定位置。也可以克隆仓库，直接使用其中的 `extension` 文件夹。
-2. Chrome 打开 `chrome://extensions`；Edge 打开 `edge://extensions`。
-3. 开启「开发者模式」，点击「加载已解压的扩展程序」。
-4. ZIP 安装时选择解压后**直接包含 `manifest.json` 的文件夹**；克隆仓库时选择 `extension` 文件夹。
-5. 将扩展固定到浏览器工具栏。
+![Extension popup showing images in download order](docs/popup.png)
 
-不需要运行 npm，也不需要登录 GitHub。此版本以可加载的扩展 ZIP 发布，未上架 Chrome / Edge 扩展商店。
+## Install
 
-## 使用
+1. Download and extract the ZIP from the [latest release](https://github.com/gulzxeric/blob-image-downloader/releases/latest), or clone this repository.
+2. Open `chrome://extensions` in Chrome or `edge://extensions` in Edge.
+3. Enable **Developer mode**, then select **Load unpacked**.
+4. For a release ZIP, select the extracted folder containing `manifest.json`. For a Git clone, select the `extension` folder.
+5. Pin the extension to the browser toolbar.
 
-1. 打开包含 blob 图片的普通网页。先滚动页面，让需要的图片加载出来。
-2. 点击工具栏的扩展图标，点击「扫描图片」。弹窗会列出数量、尺寸和排序。
-3. 可修改文件名前缀与下载子文件夹；修改后重新扫描。
-4. 点击「按顺序下载」。插件会重新扫描当前页面，将每一批保存到浏览器下载目录下的独立文件夹，例如：
+You do not need Node.js, npm, or a GitHub account to install it. Store materials are prepared, but the extension has **not yet been submitted to or published in either browser store**.
+
+## Use
+
+1. Open a regular webpage containing blob images. Scroll first to let the desired images load.
+2. Click the extension icon, then **扫描图片** (Scan images). Review the count, dimensions, and order.
+3. Optionally change **文件名前缀** (Filename prefix) and **下载子文件夹** (Download subfolder). Scan again after changing settings.
+4. Select **按顺序下载** (Download in order). The extension rescans the page and creates a separate folder for each batch in your browser's Downloads directory:
 
    ```text
    Downloads/blob-images/20261001-153000-a12b34/
@@ -28,46 +32,50 @@
      image_003.webp
    ```
 
-5. 弹窗显示浏览器确认的「已保存 / 失败 / 保存中 / 未提交」。鼠标悬停在失败条目上可看原因。
+5. Check the completed, failed, in-progress, and unsubmitted counts. Hover over a failed item for its error.
 
-关闭弹窗不会停止下载。点击「停止提交」会停止后续图片；已经交给浏览器的下载仍继续。保持来源页面打开；刷新、关闭或离开来源页面会终止尚未提交的图片。
+Downloads continue when the popup closes; reopening it restores the current session's progress. **停止提交** (Stop submitting) stops further images from entering the queue. Downloads already accepted by the browser continue.
 
-## 筛选与顺序
+Keep the source page open. Refreshing, closing, or navigating away from it stops images that have not yet been submitted.
 
-- 只检查主页面 DOM 中的 `<img>`，并要求 `img.src` 以 `blob:` 开头。
-- 默认要求原始宽、高**都严格大于 50 px**，与原脚本一致；可调整。
-- 排除未加载、没有布局尺寸、隐藏或完全透明的图片及隐藏祖先中的图片。支持可见的固定定位图片。
-- 已加载但在屏幕之外的图片也会收集；不自动滚动，不等待懒加载，不穿透 iframe 或 Shadow DOM，不收集普通 HTTP 图片或 CSS 背景图。
-- 先按文档纵坐标排序，再将顶部距该行最上方图片不超过 20 px 的图片归为同一行，行内从左到右。容差可调整。
-- 以行的最上方坐标为锚点，避免原脚本的近似比较器不满足传递性。瀑布流、重叠图片或嵌套滚动容器可能需要调整容差。
-- 同一个 blob URL 在页面中出现多次时，每个符合条件的 `<img>` 都独立编号，与原脚本一致。
+## Selection and ordering
 
-## 原始格式与限制
+- Only main-page `<img>` elements whose `img.src` starts with `blob:` are considered.
+- Both natural dimensions must be **strictly greater than 50 px** by default. This threshold is adjustable.
+- Unloaded images, images without layout dimensions, hidden or fully transparent images, and images inside hidden ancestors are excluded. Visible fixed-position images are supported.
+- Loaded images outside the viewport are included. The extension does not automatically scroll, wait for lazy loading, enter iframes or Shadow DOM, or collect HTTP images and CSS backgrounds.
+- Images are first ordered by document Y coordinate. A row includes images whose top lies within the configured tolerance of that row's topmost image. Images in the row are then ordered by X coordinate.
+- The default row tolerance is **20 px**. A fixed row anchor avoids the original script's non-transitive fuzzy comparator. Masonry layouts, overlapping images, or nested scroll containers may need a different tolerance.
+- If the same blob URL appears in multiple eligible image elements, each occurrence is numbered separately.
 
-图片字节原样保存，不做转码，不强行改成 PNG。常见 PNG / JPEG / WebP / GIF / AVIF / BMP 会检测文件头；其他已声明的支持格式采用原始 MIME，未知格式使用 `.bin`。
+## Original formats and limits
 
-blob URL 只在页面生命周期中有效。已经被页面撤销的 URL 会报告失败，即使图片仍显示在屏幕上。单张图片上限为 **24 MiB**，超过时跳过并报告失败，以避免浏览器扩展消息大小限制和过高内存使用。逐张读取并提交，默认间隔 300 ms，可在 100–3000 ms 内调整。
+Image bytes are preserved without transcoding. PNG, JPEG, WebP, GIF, AVIF, and BMP are identified from their signatures. Other supported formats use the declared MIME type; an unknown format receives a `.bin` extension. Filenames are not forced to `.png`.
 
-在 `chrome://`、`edge://`、浏览器扩展商店等禁止注入的页面无法使用。本地文件网页需在扩展详情中启用「允许访问文件网址」。浏览器或企业策略仍可能阻止下载；如设置了逐次询问保存位置，可能出现保存对话框。下载目录由浏览器设置决定，插件填写的是目录内的相对子文件夹。
+Blob URLs belong to their source page and can be revoked. A revoked URL produces a failure even when its previously decoded image remains visible.
 
-状态保存在浏览器会话内，弹窗重开或扩展后台休眠后可以重新核对已提交的下载。浏览器重启后不恢复未完成的批次。
+The per-image limit is **24 MiB**. Larger images are not downloaded and are reported as failed, keeping extension messages and memory use bounded. Images are read and submitted one at a time, with a default **300 ms** interval adjustable from 100 to 3000 ms.
 
-## 权限与隐私
+Browser-internal pages, extension stores, and other protected pages cannot be scanned. For local file webpages, enable **Allow access to file URLs** in the extension's browser settings. Browser or enterprise download policies can still block a save. Your browser controls the main Downloads location; the extension specifies a relative subfolder.
 
-仅请求：
+Progress is session-only. Submitted downloads can be reconciled after the popup reopens or the extension service worker sleeps. Unfinished batches are not restored after a browser restart.
 
-| 权限 | 用途 |
+## Permissions and privacy
+
+| Permission | Purpose |
 | --- | --- |
-| `activeTab` | 点击插件后临时访问当前网页 |
-| `scripting` | 在当前主页面收集并读取 blob 图片 |
-| `downloads` | 保存图片并确认下载结果 |
-| `storage` | 保存设置及当前会话的进度 |
+| `activeTab` | Temporarily access the current webpage after you click the extension |
+| `scripting` | Collect and read blob images in that page's main frame |
+| `downloads` | Save image files and track actual browser download outcomes |
+| `storage` | Store preferences locally and progress for the current browser session |
 
-不请求全站访问权限；不在后台自动扫描网页。无远程代码、分析服务或数据上传。图片数据只在网页、插件与浏览器下载功能之间本地传递；仅下载任务的元数据进入会话存储。
+There are no blanket host permissions, remote scripts, analytics, advertisements, or developer-operated upload endpoints. Image bytes are passed locally between the page, extension, and browser download manager. Only task metadata is stored in session storage.
 
-## 开发与测试
+Read the [privacy policy](PRIVACY.md) for details. The browser itself retains normal download history.
 
-需要 Node.js 22 或更新版本。扩展源文件可直接加载。
+## Development
+
+Use Node.js 22 or later. The extension source can be loaded directly.
 
 ```sh
 npm ci
@@ -78,10 +86,16 @@ npm run test:e2e
 npm run package
 ```
 
-浏览器测试使用独立临时配置和本地图片测试页，会在浏览器下载目录产生 `blob-images-e2e` 文件夹。测试副本临时添加 `http://127.0.0.1/*` 权限，以模拟点击工具栏后获得的页面权限；**发布的 manifest 不包含这个权限**。测试关闭后删除独立临时配置，不修改日常浏览器。
+End-to-end tests use an isolated temporary browser profile and a localhost image fixture. The test copy temporarily grants `http://127.0.0.1/*` access to simulate the permission normally obtained by clicking the toolbar button. **The release manifest does not include this permission.** Tests produce a `blob-images-e2e` folder in the test browser's downloads location and remove their temporary profile after closing.
 
-端到端测试覆盖：隐藏、小尺寸及非 blob 图片排除，DOM 与视觉顺序不一致，固定定位，滚动，原始字节与文件格式，失效 URL，停止提交，真实弹窗交互，以及关闭弹窗后继续下载并恢复进度。
+Tests cover filtering, visual ordering independent of DOM order, fixed positioning, scrolling, original bytes and formats, revoked URLs, stopping submission, popup interactions, and continued downloads after closing the popup.
 
-`npm run package` 输出 `dist/blob-image-downloader-v1.0.0.zip`，ZIP 根目录直接包含 `manifest.json`，可解压加载或用于商店后续提交。图标可用 `python scripts/generate-icons.py` 重新生成（仅使用标准库）。
+`npm run package` creates `dist/blob-image-downloader-v1.0.1.zip` with `manifest.json` and the MIT license at the ZIP root. Regenerate icons with `python scripts/generate-icons.py` (Python standard library only); regenerate store graphics with `npm run store:assets`.
 
-API 行为参考：[Chrome 下载 API](https://developer.chrome.com/docs/extensions/reference/api/downloads)、[脚本注入 API](https://developer.chrome.com/docs/extensions/reference/api/scripting)、[会话存储 API](https://developer.chrome.com/docs/extensions/reference/api/storage)。
+See [store submission materials](store/README.md) for listing copy, permission explanations, review instructions, and graphics.
+
+API references: [Chrome downloads](https://developer.chrome.com/docs/extensions/reference/api/downloads), [script injection](https://developer.chrome.com/docs/extensions/reference/api/scripting), and [session storage](https://developer.chrome.com/docs/extensions/reference/api/storage).
+
+## License
+
+[MIT](LICENSE) © 2026 gulzxeric.

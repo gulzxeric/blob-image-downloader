@@ -25,7 +25,10 @@ for size in (16, 32, 48, 128):
             samples = []
             for sy in range(4):
                 for sx in range(4):
-                    px, py = (x + (sx + .5) / 4) * 128 / size, (y + (sy + .5) / 4) * 128 / size
+                    # The store icon has 16px transparent padding on each side.
+                    inset, art_size = (16, 96) if size == 128 else (0, size)
+                    px = (x + (sx + .5) / 4 - inset) * 128 / art_size
+                    py = (y + (sy + .5) / 4 - inset) * 128 / art_size
                     color = (33, 91, 221, 255) if rounded(px, py, 0, 0, 128, 128, 26) else (0, 0, 0, 0)
                     for left, top in ((25, 24), (69, 24), (25, 70), (69, 70)):
                         if rounded(px, py, left, top, left + 34, top + 35, 5):

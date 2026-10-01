@@ -1,13 +1,15 @@
 {
   "name": "blob-image-downloader",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
+  "license": "MIT",
   "description": "Download visible blob images in visual reading order, for Chrome and Edge.",
   "scripts": {
     "test": "node --test tests/core.test.cjs",
     "test:e2e": "node tests/extension.e2e.cjs",
     "check": "node scripts/check.cjs",
-    "package": "node scripts/package.cjs"
+    "package": "node scripts/package.cjs",
+    "store:assets": "node scripts/generate-store-assets.cjs"
   },
   "devDependencies": {
     "playwright": "^1.58.2"
