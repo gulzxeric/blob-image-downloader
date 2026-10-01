@@ -97,7 +97,20 @@ async function until(callback, timeout = 20000) {
     await popup.locator('#scan').click();
     await until(async () => (await popup.locator('#image-count').textContent()) === '4 张');
     await popup.locator('body').screenshot({ path: path.join(artifacts, 'popup.png') });
-    console.log('E2E passed: filtering, visual order, fixed images, byte preservation, formats, scrolling, revoked blobs, stopping and popup UI.');
+    // Start through the real UI, close it during submission, then reopen it.
+    await popup.locator('#download').click();
+    await until(async () => !(await popup.locator('#stop').isHidden()));
+    await popup.close();
+    const reopened = await browser.newPage();
+    await reopened.addInitScript(targetTabId => {
+      const query = chrome.tabs.query.bind(chrome.tabs);
+      chrome.tabs.query = async options => options.active
+        ? (await query({})).filter(tab => tab.id === targetTabId) : query(options);
+    }, tabId);
+    await reopened.goto(`chrome-extension://${extensionId}/popup.html`);
+    await until(async () => (await reopened.locator('#status').textContent()).includes('已保存 3 张 · 失败 1 张 · 保存中 0 张'));
+    assert.equal(await reopened.locator('#result-heading').textContent(), '本次下载已结束');
+    console.log('E2E passed: filtering, visual order, fixed images, byte preservation, formats, scrolling, revoked blobs, stopping, popup UI and continued downloads after closing popup.');
   } finally {
     await browser?.close();
     await new Promise(resolve => server.close(resolve));
