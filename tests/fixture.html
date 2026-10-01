@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="zh-CN"><meta charset="utf-8"><title>Blob image fixture</title>
+<style>body{margin:0;min-height:1800px}img{position:absolute;width:100px;height:90px}#bottom{top:500px;left:0}#right{top:0;left:200px}#left{top:15px;left:0}#fixed{position:fixed;top:150px;left:0}#small{top:250px}#hidden{display:none}#transparent{opacity:0}#invisible{visibility:hidden}#remote{top:700px}</style>
+<!-- Deliberately shuffled DOM order. -->
+<img id="bottom"><img id="right"><img id="left"><img id="fixed"><img id="small"><img id="hidden"><img id="transparent"><div style="display:none"><img id="ancestor-hidden"></div><img id="invisible"><img id="remote">
+<iframe id="frame" style="position:absolute;top:1000px" srcdoc="<img id='iframe-image'>"></iframe>
+<script>
+window.ready = (async () => {
+  const canvas = document.createElement('canvas');
+  canvas.width = 120; canvas.height = 80;
+  const context = canvas.getContext('2d');
+  const images = [ ['bottom','image/webp','#248c73'], ['right','image/jpeg','#e5a531'], ['left','image/png','#215bdd'], ['fixed','image/png','#744ac6'], ['small','image/png','#555'], ['hidden','image/png','#555'], ['transparent','image/png','#555'], ['ancestor-hidden','image/png','#555'], ['invisible','image/png','#555'] ];
+  window.expected = {};
+  for (const [id, mime, color] of images) {
+    canvas.width = id === 'small' ? 50 : 120;
+    context.fillStyle = color; context.fillRect(0,0,canvas.width,canvas.height);
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, mime));
+    expected[id] = Array.from(new Uint8Array(await blob.arrayBuffer()));
+    const img = document.getElementById(id);
+    img.src = URL.createObjectURL(blob);
+    await img.decode();
+  }
+  const remote = document.getElementById('remote');
+  remote.src = canvas.toDataURL(); await remote.decode();
+  const frame = document.getElementById('frame');
+  if (!frame.contentDocument.getElementById('iframe-image')) await new Promise(resolve => frame.onload = resolve);
+  const blob = await new Promise(resolve => canvas.toBlob(resolve));
+  frame.contentDocument.getElementById('iframe-image').src = URL.createObjectURL(blob);
+})();
+</script></html>

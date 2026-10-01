@@ -1,0 +1,45 @@
+:root { color-scheme: light; --paper: #f2f6fc; --white: #ffffff; --ink: #173253; --muted: #637993; --blue: #215bdd; --line: #d6e2f1; --error: #a42738; }
+* { box-sizing: border-box; }
+body { width: 400px; margin: 0; color: var(--ink); background: var(--paper); font-family: "Segoe UI", "Microsoft YaHei", sans-serif; font-size: 13px; }
+header { display: flex; align-items: center; gap: 12px; padding: 24px 24px 18px; }
+.eyebrow { font: 10px/1.5 "Consolas", monospace; letter-spacing: 1.1px; color: var(--blue); margin: 0 0 3px; }
+h1 { font-size: 20px; font-weight: 650; margin: 0; letter-spacing: -.5px; }
+main { padding: 0 24px 18px; }
+.page-label { display: flex; gap: 7px; align-items: center; color: var(--muted); font-size: 11px; margin-bottom: 16px; }
+#page-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dot { width: 6px; height: 6px; flex-shrink: 0; border-radius: 50%; background: var(--blue); }
+.order-guide { display: flex; gap: 18px; align-items: center; margin-bottom: 23px; }
+.sheet { width: 92px; flex-shrink: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 8px; border: 1px solid var(--line); background: var(--white); border-radius: 8px; transform: rotate(-4deg); box-shadow: 4px 4px 0 #e1eaf8; }
+.sheet span { display: flex; align-items: end; height: 32px; padding: 4px; font: 10px "Consolas", monospace; color: var(--blue); background: #eaf0ff; border-radius: 3px; }
+h2 { margin: 0; font-size: 13px; font-weight: 650; }
+.order-guide p { color: var(--muted); line-height: 1.8; font-size: 11px; margin: 5px 0 0; }
+.pair, .three { display: grid; gap: 12px; grid-template-columns: 1fr 1fr; }
+.three { grid-template-columns: 1fr 1fr 1fr; gap: 9px; padding-top: 12px; }
+label { display: block; font-size: 11px; color: var(--muted); }
+input { width: 100%; border: 1px solid var(--line); padding: 9px; margin-top: 6px; border-radius: 5px; color: var(--ink); background: var(--white); font: 12px "Consolas", "Microsoft YaHei", monospace; }
+details { margin-top: 13px; }
+summary { font-size: 11px; color: var(--muted); cursor: pointer; }
+.results { margin: 18px 0 14px; padding: 15px; background: var(--white); border: 1px solid var(--line); border-radius: 8px; }
+.result-heading { display: flex; justify-content: space-between; align-items: center; }
+#image-count { font: 17px "Consolas", monospace; color: var(--blue); }
+#status { margin: 7px 0 0; font-size: 11px; line-height: 1.8; color: var(--muted); }
+progress { width: 100%; height: 6px; accent-color: var(--blue); margin-top: 12px; }
+ol { list-style: none; padding: 0; margin: 8px 0 0; max-height: 145px; overflow-y: auto; }
+ol:empty { display: none; }
+li { display: flex; align-items: center; justify-content: space-between; padding: 7px 0; border-top: 1px solid #edf2f9; gap: 8px; font: 11px "Consolas", "Microsoft YaHei", monospace; }
+.number { color: var(--blue); margin-right: 9px; }
+.item-state { color: var(--muted); font-size: 10px; }
+.item-state.failed { color: var(--error); }
+.path { color: var(--muted); margin: 10px 0 0; font: 10px/1.6 "Consolas", "Microsoft YaHei", monospace; overflow-wrap: anywhere; }
+.actions { display: flex; gap: 9px; }
+button { cursor: pointer; font: inherit; }
+.actions button { padding: 11px 13px; border-radius: 6px; border: 1px solid var(--line); font-size: 12px; font-weight: 600; }
+.secondary { color: var(--ink); background: var(--white); }
+.primary { flex: 1; background: var(--blue); color: var(--white); border-color: var(--blue) !important; }
+button:disabled { opacity: .45; cursor: default; }
+button:hover:not(:disabled) { filter: brightness(.96); }
+button:focus-visible, input:focus-visible, summary:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }
+.error { color: var(--error); background: #fff1f3; padding: 10px; border-radius: 5px; font-size: 11px; line-height: 1.7; margin: 12px 0 0; }
+footer { padding: 13px 24px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; color: var(--muted); font-size: 10px; }
+footer button { background: transparent; border: none; color: var(--blue); padding: 0; font-size: 10px; }
+[hidden] { display: none !important; }

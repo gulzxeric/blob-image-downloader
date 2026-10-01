@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Blob 图片顺序下载</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header>
+    <img src="icons/icon48.png" width="36" height="36" alt="">
+    <div><p class="eyebrow">BLOB / IMAGE DOWNLOADER</p><h1>图片，按顺序收好。</h1></div>
+  </header>
+  <main>
+    <div class="page-label"><span class="dot"></span><span id="page-title">正在连接当前网页…</span></div>
+    <section class="order-guide" aria-label="从上到下，同一行从左到右">
+      <div class="sheet"><span>001</span><span>002</span><span>003</span><span>004</span></div>
+      <div><h2>跟着页面的阅读顺序</h2><p>从上到下，同一行从左到右。<br>只收集已加载的 blob 图片。</p></div>
+    </section>
+    <form id="settings">
+      <div class="pair">
+        <label>文件名前缀<input name="prefix" id="prefix" maxlength="64" value="image" autocomplete="off"></label>
+        <label>下载子文件夹<input name="folder" id="folder" maxlength="64" value="blob-images" autocomplete="off"></label>
+      </div>
+      <details>
+        <summary>筛选与排序设置</summary>
+        <div class="three">
+          <label>宽高大于 / px<input name="minSize" id="minSize" type="number" min="0" max="10000" value="50" required></label>
+          <label>同行容差 / px<input name="rowTolerance" id="rowTolerance" type="number" min="0" max="200" value="20" required></label>
+          <label>提交间隔 / ms<input name="interval" id="interval" type="number" min="100" max="3000" value="300" required></label>
+        </div>
+      </details>
+    </form>
+    <section class="results" aria-label="扫描与下载结果">
+      <div class="result-heading"><h2 id="result-heading">先看看有哪些图片</h2><span id="image-count">—</span></div>
+      <p id="status" role="status" aria-live="polite">点击扫描，查看图片数量和顺序。</p>
+      <progress id="progress" value="0" max="1" hidden></progress>
+      <ol id="image-list" aria-label="图片顺序"></ol>
+      <p id="path" class="path" hidden></p>
+    </section>
+    <div class="actions">
+      <button id="scan" class="secondary" type="button">扫描图片</button>
+      <button id="download" class="primary" type="button" disabled>按顺序下载</button>
+      <button id="stop" class="secondary" type="button" hidden>停止提交</button>
+    </div>
+    <p id="error" class="error" role="alert" hidden></p>
+  </main>
+  <footer><span>保留图片原始格式</span><button id="open-downloads" type="button">打开下载文件夹 ↗</button></footer>
+  <script src="common.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
