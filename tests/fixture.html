@@ -3,7 +3,7 @@
 <style>body{margin:0;min-height:1800px}img{position:absolute;width:100px;height:90px}#bottom{top:500px;left:0}#right{top:0;left:200px}#left{top:15px;left:0}#fixed{position:fixed;top:150px;left:0}#small{top:250px}#hidden{display:none}#transparent{opacity:0}#invisible{visibility:hidden}#remote{top:700px}</style>
 <!-- Deliberately shuffled DOM order. -->
 <img id="bottom"><img id="right"><img id="left"><img id="fixed"><img id="small"><img id="hidden"><img id="transparent"><div style="display:none"><img id="ancestor-hidden"></div><img id="invisible"><img id="remote">
-<iframe id="frame" style="position:absolute;top:1000px" srcdoc="<img id='iframe-image'>"></iframe>
+<iframe id="frame" style="position:absolute;top:1000px;left:0;border:0" srcdoc="<body style='margin:0'><img id='iframe-image'></body>"></iframe>
 <script>
 window.ready = (async () => {
   const canvas = document.createElement('canvas');
@@ -25,6 +25,8 @@ window.ready = (async () => {
   const frame = document.getElementById('frame');
   if (!frame.contentDocument.getElementById('iframe-image')) await new Promise(resolve => frame.onload = resolve);
   const blob = await new Promise(resolve => canvas.toBlob(resolve));
+  expected.frame = Array.from(new Uint8Array(await blob.arrayBuffer()));
   frame.contentDocument.getElementById('iframe-image').src = URL.createObjectURL(blob);
+  await frame.contentDocument.getElementById('iframe-image').decode();
 })();
 </script></html>

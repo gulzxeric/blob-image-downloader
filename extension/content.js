@@ -3,19 +3,44 @@
   const runner = { jobId: null, stopped: false };
   globalThis.BlobImageRunner = runner;
 
+  function visible(element) {
+    const rect = element.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0 || element.getClientRects().length === 0) return false;
+    const view = element.ownerDocument.defaultView;
+    for (let node = element; node; node = node.parentElement) {
+      const style = view.getComputedStyle(node);
+      if (style.display === "none" || style.visibility === "hidden" || style.visibility === "collapse" || Number(style.opacity) === 0) return false;
+    }
+    return true;
+  }
+
   function scan(options) {
-    const images = Array.from(document.querySelectorAll("img")).flatMap(img => {
-      // Match the original src-based scope; do not expand to remote or background images.
-      if (!img.src.startsWith("blob:") || !img.complete || img.naturalWidth <= options.minSize || img.naturalHeight <= options.minSize) return [];
-      const rect = img.getBoundingClientRect();
-      if (rect.width <= 0 || rect.height <= 0 || img.getClientRects().length === 0) return [];
-      for (let node = img; node instanceof Element; node = node.parentElement) {
-        const style = getComputedStyle(node);
-        if (style.display === "none" || style.visibility === "hidden" || style.visibility === "collapse" || Number(style.opacity) === 0) return [];
+    const images = [];
+    function collect(doc, offsetTop = 0, offsetLeft = 0) {
+      const view = doc.defaultView;
+      if (!view) return;
+      for (const img of doc.querySelectorAll("img")) {
+        // Match the original src-based scope; do not expand to remote or background images.
+        if (!img.src.startsWith("blob:") || !img.complete || img.naturalWidth <= options.minSize || img.naturalHeight <= options.minSize || !visible(img)) continue;
+        const rect = img.getBoundingClientRect();
+        images.push({ url: img.src, width: img.naturalWidth, height: img.naturalHeight,
+          top: offsetTop + rect.top + view.scrollY, left: offsetLeft + rect.left + view.scrollX });
       }
-      return [{ url: img.src, width: img.naturalWidth, height: img.naturalHeight,
-        top: rect.top + scrollY, left: rect.left + scrollX }];
-    });
+      for (const frame of doc.querySelectorAll("iframe, frame")) {
+        if (!visible(frame)) continue;
+        // The course viewer has its own document. Inspecting a slide in DevTools
+        // selects that document; scanning only the outer DOM misses all slides.
+        // Keep the existing activeTab scope: inaccessible cross-origin frames
+        // are skipped, and same-origin blob URLs remain readable by this runner.
+        let child;
+        try { child = frame.contentDocument; } catch { continue; }
+        if (!child) continue;
+        const rect = frame.getBoundingClientRect();
+        collect(child, offsetTop + rect.top + view.scrollY + frame.clientTop,
+          offsetLeft + rect.left + view.scrollX + frame.clientLeft);
+      }
+    }
+    collect(document);
     return BlobImages.sortImages(images, options.rowTolerance);
   }
 

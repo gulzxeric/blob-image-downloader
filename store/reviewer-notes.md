@@ -33,4 +33,4 @@ No account, subscription, API key, paid site, or third-party service is required
 })();
 ```
 
-Only main-frame blob images with both natural dimensions strictly greater than 50 px are included by default. No auto-scroll, ordinary HTTP image downloads, or browser-internal page access. Limit: 24 MiB per image. No blanket host permissions or remote executable code.
+Blob images in the main page and accessible same-origin iframes with both natural dimensions strictly greater than 50 px are included by default. Cross-origin and opaque sandboxed frames are skipped. No auto-scroll, ordinary HTTP image downloads, or browser-internal page access. Limit: 24 MiB per image. No blanket host permissions or remote executable code.

@@ -40,10 +40,10 @@ Keep the source page open. Refreshing, closing, or navigating away from it stops
 
 ## Selection and ordering
 
-- Only main-page `<img>` elements whose `img.src` starts with `blob:` are considered.
+- Main-page and same-origin iframe `<img>` elements whose `img.src` starts with `blob:` are considered, including nested frames. Embedded course viewers do not require inspecting a slide in DevTools first.
 - Both natural dimensions must be **strictly greater than 50 px** by default. This threshold is adjustable.
 - Unloaded images, images without layout dimensions, hidden or fully transparent images, and images inside hidden ancestors are excluded. Visible fixed-position images are supported.
-- Loaded images outside the viewport are included. The extension does not automatically scroll, wait for lazy loading, enter iframes or Shadow DOM, or collect HTTP images and CSS backgrounds.
+- Loaded images outside the viewport are included. The extension does not automatically scroll, wait for lazy loading, access cross-origin or opaque sandboxed iframes, enter Shadow DOM, or collect HTTP images and CSS backgrounds.
 - Images are first ordered by document Y coordinate. A row includes images whose top lies within the configured tolerance of that row's topmost image. Images in the row are then ordered by X coordinate.
 - The default row tolerance is **20 px**. A fixed row anchor avoids the original script's non-transitive fuzzy comparator. Masonry layouts, overlapping images, or nested scroll containers may need a different tolerance.
 - If the same blob URL appears in multiple eligible image elements, each occurrence is numbered separately.
@@ -65,7 +65,7 @@ Progress is session-only. Submitted downloads can be reconciled after the popup 
 | Permission | Purpose |
 | --- | --- |
 | `activeTab` | Temporarily access the current webpage after you click the extension |
-| `scripting` | Collect and read blob images in that page's main frame |
+| `scripting` | Collect and read blob images in the page and its same-origin iframes |
 | `downloads` | Save image files and track actual browser download outcomes |
 | `storage` | Store preferences locally and progress for the current browser session |
 
@@ -88,9 +88,9 @@ npm run package
 
 End-to-end tests use an isolated temporary browser profile and a localhost image fixture. The test copy temporarily grants `http://127.0.0.1/*` access to simulate the permission normally obtained by clicking the toolbar button. **The release manifest does not include this permission.** Tests produce a `blob-images-e2e` folder in the test browser's downloads location and remove their temporary profile after closing.
 
-Tests cover filtering, visual ordering independent of DOM order, fixed positioning, scrolling, original bytes and formats, revoked URLs, stopping submission, popup interactions, and continued downloads after closing the popup.
+Tests cover course iframes with no outer-page images, nested frame coordinates and borders, inner and outer scrolling, hidden and inaccessible frames, filtering, visual ordering independent of DOM order, fixed positioning, original bytes and formats, revoked URLs, stopping submission, popup interactions, and continued downloads after closing the popup.
 
-`npm run package` creates `dist/blob-image-downloader-v1.0.1.zip` with `manifest.json` and the MIT license at the ZIP root. Regenerate icons with `python scripts/generate-icons.py` (Python standard library only); regenerate store graphics with `npm run store:assets`.
+`npm run package` creates `dist/blob-image-downloader-v1.0.2.zip` with `manifest.json` and the MIT license at the ZIP root. Regenerate icons with `python scripts/generate-icons.py` (Python standard library only); regenerate store graphics with `npm run store:assets`.
 
 See [store submission materials](store/README.md) for listing copy, permission explanations, review instructions, and graphics.
 

@@ -36,10 +36,10 @@
 
 ## 筛选与顺序
 
-- 只检查主页面 DOM 中的 `<img>`，并要求 `img.src` 以 `blob:` 开头。
+- 检查主页面及同源 iframe（包括嵌套框架）中的 `<img>`，并要求 `img.src` 以 `blob:` 开头。华为课件查看器这类同源内嵌页面无需先打开开发者工具。
 - 默认要求原始宽、高**都严格大于 50 px**，与原脚本一致；可调整。
 - 排除未加载、没有布局尺寸、隐藏或完全透明的图片及隐藏祖先中的图片。支持可见的固定定位图片。
-- 已加载但在屏幕之外的图片也会收集；不自动滚动，不等待懒加载，不穿透 iframe 或 Shadow DOM，不收集普通 HTTP 图片或 CSS 背景图。
+- 已加载但在屏幕之外的图片也会收集；不自动滚动，不等待懒加载，不访问跨域或不允许同源访问的沙盒 iframe，不穿透 Shadow DOM，不收集普通 HTTP 图片或 CSS 背景图。
 - 先按文档纵坐标排序，再将顶部距该行最上方图片不超过 20 px 的图片归为同一行，行内从左到右。容差可调整。
 - 以行的最上方坐标为锚点，避免原脚本的近似比较器不满足传递性。瀑布流、重叠图片或嵌套滚动容器可能需要调整容差。
 - 同一个 blob URL 在页面中出现多次时，每个符合条件的 `<img>` 都独立编号，与原脚本一致。
@@ -61,7 +61,7 @@ blob URL 只在页面生命周期中有效。已经被页面撤销的 URL 会报
 | 权限 | 用途 |
 | --- | --- |
 | `activeTab` | 点击插件后临时访问当前网页 |
-| `scripting` | 在当前主页面收集并读取 blob 图片 |
+| `scripting` | 在当前页面及同源 iframe 中收集并读取 blob 图片 |
 | `downloads` | 保存图片并确认下载结果 |
 | `storage` | 保存设置及当前会话的进度 |
 
@@ -82,9 +82,9 @@ npm run package
 
 浏览器测试使用独立临时配置和本地图片测试页，会在浏览器下载目录产生 `blob-images-e2e` 文件夹。测试副本临时添加 `http://127.0.0.1/*` 权限，以模拟点击工具栏后获得的页面权限；**发布的 manifest 不包含这个权限**。测试关闭后删除独立临时配置，不修改日常浏览器。
 
-端到端测试覆盖：隐藏、小尺寸及非 blob 图片排除，DOM 与视觉顺序不一致，固定定位，滚动，原始字节与文件格式，失效 URL，停止提交，真实弹窗交互，以及关闭弹窗后继续下载并恢复进度。
+端到端测试覆盖：外层无图的同源课件 iframe、嵌套框架坐标与边框、框架内外滚动、隐藏框架及不可访问框架，隐藏、小尺寸及非 blob 图片排除，DOM 与视觉顺序不一致，固定定位，原始字节与文件格式，失效 URL，停止提交，真实弹窗交互，以及关闭弹窗后继续下载并恢复进度。
 
-`npm run package` 输出 `dist/blob-image-downloader-v1.0.1.zip`，ZIP 根目录直接包含 `manifest.json` 和 MIT 许可证，可解压加载或用于商店提交。图标可用 `python scripts/generate-icons.py` 重新生成（仅使用标准库）。
+`npm run package` 输出 `dist/blob-image-downloader-v1.0.2.zip`，ZIP 根目录直接包含 `manifest.json` 和 MIT 许可证，可解压加载或用于商店提交。图标可用 `python scripts/generate-icons.py` 重新生成（仅使用标准库）。
 
 API 行为参考：[Chrome 下载 API](https://developer.chrome.com/docs/extensions/reference/api/downloads)、[脚本注入 API](https://developer.chrome.com/docs/extensions/reference/api/scripting)、[会话存储 API](https://developer.chrome.com/docs/extensions/reference/api/storage)。
 

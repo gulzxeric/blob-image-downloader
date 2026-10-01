@@ -1,6 +1,6 @@
 # Browser store submission materials
 
-Version: **1.0.1**. Publisher: **gulzxeric**. License: **MIT**.
+Version: **1.0.2**. Publisher: **gulzxeric**. License: **MIT**.
 
 **Status: prepared; not submitted.** The publisher has not yet registered a Chrome Web Store or Microsoft Edge developer account. Browser UI control was also denied during preparation. No dashboard draft or review submission was created. Account enrollment and any required developer agreement must be completed by the publisher.
 
@@ -8,7 +8,7 @@ Version: **1.0.1**. Publisher: **gulzxeric**. License: **MIT**.
 
 | File | Purpose |
 | --- | --- |
-| [Release ZIP](https://github.com/gulzxeric/blob-image-downloader/releases/latest) | Download `blob-image-downloader-v1.0.1.zip`; upload without extracting |
+| [Release ZIP](https://github.com/gulzxeric/blob-image-downloader/releases/latest) | Download `blob-image-downloader-v1.0.2.zip`; upload without extracting |
 | [listing.en.md](listing.en.md) | English listing copy |
 | [listing.zh-CN.md](listing.zh-CN.md) | Chinese copy matching the popup language |
 | [privacy-and-permissions.md](privacy-and-permissions.md) | Single purpose, permission justifications, and privacy declarations |

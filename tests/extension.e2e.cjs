@@ -30,7 +30,8 @@ async function until(callback, timeout = 20000) {
   fs.writeFileSync(manifestPath, JSON.stringify(manifest));
   const server = http.createServer((request, response) => {
     response.setHeader('Content-Type', 'text/html; charset=utf-8');
-    response.end(fs.readFileSync(path.join(__dirname, 'fixture.html')));
+    const file = request.url === '/iframe-only' ? 'iframe-fixture.html' : request.url === '/iframe-image' ? 'iframe-image.html' : 'fixture.html';
+    response.end(fs.readFileSync(path.join(__dirname, file)));
   });
   let browser;
   try {
@@ -57,32 +58,82 @@ async function until(callback, timeout = 20000) {
     // test build localhost host access (see README test instructions).
     const message = (type, extra = {}) => popup.evaluate(async ({ type, tabId, extra }) => chrome.runtime.sendMessage({ type, tabId, ...extra }), { type, tabId, extra });
     const options = { minSize: 50, rowTolerance: 20, interval: 100, prefix: 'image', folder: 'blob-images-e2e' };
+    // Same symptom as the course viewer: top-level JS sees zero blob images,
+    // while the selected DevTools iframe sees a fully loaded slide.
+    await fixture.goto(`http://127.0.0.1:${server.address().port}/iframe-only`);
+    await fixture.evaluate(() => window.ready);
+    assert.equal(await fixture.locator('img').count(), 0);
+    assert.equal(await fixture.frameLocator('#course').locator('img').count(), 1);
+    const frameScan = await message('SCAN', { options });
+    assert.equal(frameScan.ok, true, frameScan.error);
+    assert.equal(frameScan.images.length, 1, 'loaded course image inside a same-origin iframe must be found without inspecting it first');
+    assert.deepEqual(frameScan.images.map(item => [item.top,item.left]), [[125,70]]);
+    const frameStart = await message('START', { options });
+    assert.equal(frameStart.ok, true, frameStart.error);
+    const frameDone = await until(async () => { const status = await message('GET_STATUS'); return status.job && !status.job.busy && status.job; });
+    assert.equal(frameDone.complete, 1);
+    assert.equal(frameDone.failed, 0);
+    const [frameDownload] = await worker.evaluate(async id => chrome.downloads.search({ id }), frameDone.items[0].downloadId);
+    assert.deepEqual(Array.from(fs.readFileSync(frameDownload.filename)), await fixture.evaluate(() => document.getElementById('course').contentWindow.expected));
+    // Scrolling either document must preserve the course's reading order.
+    await fixture.evaluate(() => { scrollTo(0, 50); document.getElementById('course').contentWindow.scrollTo(0, 40); });
+    assert.deepEqual((await message('SCAN', { options })).images.map(item => [item.top,item.left]), [[125,70]]);
+    await fixture.evaluate(async () => {
+      scrollTo(0, 0);
+      const course = document.getElementById('course');
+      course.contentWindow.scrollTo(0, 0);
+      const nested = course.contentDocument.createElement('iframe');
+      nested.id = 'nested';
+      nested.style.cssText = 'position:absolute;top:200px;left:100px;width:200px;height:150px;border:3px solid black';
+      nested.src = '/iframe-image';
+      const loaded = new Promise(resolve => nested.onload = resolve);
+      course.contentDocument.body.append(nested);
+      await loaded; await nested.contentWindow.ready;
+    });
+    assert.deepEqual((await message('SCAN', { options })).images.map(item => [item.top,item.left]), [[125,70],[328,173]], 'nested frame positions include each frame border');
+    await fixture.evaluate(() => { document.getElementById('course').contentDocument.getElementById('nested').style.visibility = 'hidden'; });
+    assert.equal((await message('SCAN', { options })).images.length, 1, 'hidden nested frame images must be excluded');
+    await fixture.evaluate(() => { document.getElementById('course').style.opacity = '0'; });
+    assert.equal((await message('SCAN', { options })).images.length, 0, 'hidden frame ancestors must exclude all their images');
+    await fixture.evaluate(async () => {
+      document.getElementById('course').style.opacity = '1';
+      const opaque = document.createElement('iframe');
+      opaque.sandbox = 'allow-scripts';
+      opaque.src = '/iframe-image';
+      const loaded = new Promise(resolve => opaque.onload = resolve);
+      document.body.append(opaque);
+      await loaded;
+      if (opaque.contentDocument) throw new Error('Expected an inaccessible sandboxed frame');
+    });
+    assert.equal((await message('SCAN', { options })).images.length, 1, 'inaccessible frames must not break scanning');
+    await fixture.goto(`http://127.0.0.1:${server.address().port}`);
+    await fixture.evaluate(() => window.ready);
     const scan = await message('SCAN', { options });
     assert.equal(scan.ok, true, scan.error);
-    assert.equal(scan.images.length, 4, 'hidden, <=50px, non-blob and iframe images must be excluded');
-    assert.deepEqual(scan.images.map(item => [item.top, item.left]), [[15,0],[0,200],[150,0],[500,0]]);
+    assert.equal(scan.images.length, 5, 'include same-origin iframe images; exclude hidden, <=50px and non-blob images');
+    assert.deepEqual(scan.images.map(item => [item.top, item.left]), [[15,0],[0,200],[150,0],[500,0],[1000,0]]);
     const started = await message('START', { options });
     assert.equal(started.ok, true, started.error);
     const done = await until(async () => { const status = await message('GET_STATUS'); return status.job && !status.job.busy && status.job; });
-    assert.equal(done.complete, 4);
+    assert.equal(done.complete, 5);
     assert.equal(done.failed, 0);
-    assert.deepEqual(done.items.map(item => path.extname(item.filename)), ['.png','.jpg','.png','.webp']);
+    assert.deepEqual(done.items.map(item => path.extname(item.filename)), ['.png','.jpg','.png','.webp','.png']);
     const expected = await fixture.evaluate(() => window.expected);
-    for (const [index, id] of ['left','right','fixed','bottom'].entries()) {
+    for (const [index, id] of ['left','right','fixed','bottom','frame'].entries()) {
       const [download] = await worker.evaluate(async id => chrome.downloads.search({ id }), done.items[index].downloadId);
       assert.deepEqual(Array.from(fs.readFileSync(download.filename)), expected[id], 'downloaded bytes must match original blob');
     }
     // Scroll-invariance of document coordinates.
     await fixture.evaluate(() => scrollTo(0, 300));
     const scrolled = await message('SCAN', { options });
-    assert.deepEqual(scrolled.images.map(item => [item.top,item.left]), [[15,0],[0,200],[450,0],[500,0]]);
+    assert.deepEqual(scrolled.images.map(item => [item.top,item.left]), [[15,0],[0,200],[450,0],[500,0],[1000,0]]);
     await fixture.evaluate(() => scrollTo(0, 0));
     // A decoded image can remain visible after its object URL is revoked.
     await fixture.evaluate(() => URL.revokeObjectURL(document.getElementById('left').src));
     await message('START', { options });
     const failed = await until(async () => { const status = await message('GET_STATUS'); return status.job && !status.job.busy && status.job; });
     assert.equal(failed.failed, 1);
-    assert.equal(failed.complete, 3);
+    assert.equal(failed.complete, 4);
     assert.equal(failed.items[0].state, 'failed');
     // Stop should leave pending browser saves running and mark unsubmitted items.
     await message('START', { options: { ...options, interval: 1000 } });
@@ -95,7 +146,7 @@ async function until(callback, timeout = 20000) {
     // Actual popup UI against the active fixture, via test-only override.
     await fixture.bringToFront();
     await popup.locator('#scan').click();
-    await until(async () => (await popup.locator('#image-count').textContent()) === '4 张');
+    await until(async () => (await popup.locator('#image-count').textContent()) === '5 张');
     await popup.locator('body').screenshot({ path: path.join(artifacts, 'popup.png') });
     // Start through the real UI, close it during submission, then reopen it.
     await popup.locator('#download').click();
@@ -108,9 +159,9 @@ async function until(callback, timeout = 20000) {
         ? (await query({})).filter(tab => tab.id === targetTabId) : query(options);
     }, tabId);
     await reopened.goto(`chrome-extension://${extensionId}/popup.html`);
-    await until(async () => (await reopened.locator('#status').textContent()).includes('已保存 3 张 · 失败 1 张 · 保存中 0 张'));
+    await until(async () => (await reopened.locator('#status').textContent()).includes('已保存 4 张 · 失败 1 张 · 保存中 0 张'));
     assert.equal(await reopened.locator('#result-heading').textContent(), '本次下载已结束');
-    console.log('E2E passed: filtering, visual order, fixed images, byte preservation, formats, scrolling, revoked blobs, stopping, popup UI and continued downloads after closing popup.');
+    console.log('E2E passed: course iframe discovery and byte preservation, filtering, visual order, fixed images, formats, scrolling, revoked blobs, stopping, popup UI and continued downloads after closing popup.');
   } finally {
     await browser?.close();
     await new Promise(resolve => server.close(resolve));

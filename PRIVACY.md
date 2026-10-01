@@ -1,12 +1,12 @@
 # Privacy Policy — Blob Image Downloader
 
-Effective date: October 1, 2026. Applies to extension version 1.0.1.
+Effective date: October 1, 2026. Applies to extension version 1.0.2.
 
 Blob Image Downloader is maintained by **gulzxeric**. Its purpose is to save loaded, visible blob images from the webpage selected by the user, in visual reading order.
 
 ## Information processed on your device
 
-After you click the extension and scan a page, it reads that page's main-frame image elements, blob URLs, natural dimensions, layout coordinates, and visibility styles. The page title is shown in the popup to identify the selected page.
+After you click the extension and scan a page, it reads image elements in the page and accessible same-origin iframes, blob URLs, natural dimensions, layout coordinates, and visibility styles. Cross-origin and opaque sandboxed frames are skipped. The page title is shown in the popup to identify the selected page.
 
 When you start a download, it reads the selected blob image bytes and passes them to your browser's download manager. Images are not sent to the developer or a developer-operated server.
 

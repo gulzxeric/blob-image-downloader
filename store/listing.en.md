@@ -30,7 +30,7 @@ The extension runs on the selected page after you click it. It does not request 
 
 Scope and limits:
 
-Only loaded, visible main-page image elements with blob URLs are supported. The extension does not automatically scroll or enter iframes and does not download ordinary HTTP images, CSS backgrounds, or videos. Each image must be no larger than 24 MiB. Revoked URLs and browser restrictions can produce failures.
+Only loaded, visible image elements with blob URLs in the main page and same-origin iframes are supported. The extension does not automatically scroll or access cross-origin or opaque sandboxed iframes and does not download ordinary HTTP images, CSS backgrounds, or videos. Each image must be no larger than 24 MiB. Revoked URLs and browser restrictions can produce failures.
 
 The current popup interface is in Simplified Chinese. “扫描图片” means Scan images, “按顺序下载” means Download in order, and “停止提交” means Stop submitting.
 

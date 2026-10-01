@@ -80,7 +80,7 @@ $("scan").addEventListener("click", () => action(async settings => {
   currentJob = null;
   $("image-count").textContent = `${scanned.length} 张`;
   $("result-heading").textContent = scanned.length ? "按这个顺序下载" : "没有找到符合条件的图片";
-  $("status").textContent = scanned.length ? "下载时会重新扫描页面，每批图片放进独立文件夹。" : "先滚动页面让图片加载，再试一次。这里只收集 blob 图片。";
+  $("status").textContent = scanned.length ? "下载时会重新扫描页面，每批图片放进独立文件夹。" : "先让图片加载，再试一次。支持主页面及同源 iframe 中的 blob 图片。";
   $("progress").hidden = true;
   $("path").hidden = true;
   renderList(scanned, false);

@@ -1,6 +1,6 @@
 # Privacy and permission declarations
 
-These statements describe version 1.0.1. Match them to the current dashboard's field labels; no declaration has been submitted yet.
+These statements describe version 1.0.2. Match them to the current dashboard's field labels; no declaration has been submitted yet.
 
 ## Single purpose
 
@@ -10,7 +10,7 @@ Save the user's selected webpage's loaded, visible blob images as numbered local
 
 | Permission | Review form text |
 | --- | --- |
-| `activeTab` | Temporarily accesses the webpage selected by clicking the toolbar button to inspect its main-frame image elements. No persistent all-site access. |
+| `activeTab` | Temporarily accesses the webpage selected by clicking the toolbar button to inspect image elements in the main page and accessible same-origin iframes. No persistent all-site access. |
 | `scripting` | Injects the packaged isolated-world collector to filter and order blob images and read their local blob data after the user requests a download. No remote executable code is injected. |
 | `downloads` | Saves the selected original data with sequential relative filenames and tracks completion or interruption. Searches use identifiers returned for the extension's own tasks. Opens Downloads when requested. |
 | `storage` | Stores preferences locally and task metadata in session storage, so reopening the popup restores progress and reconciles results. Image bytes and blob URLs are not persisted in these stores. |
