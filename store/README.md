@@ -1,55 +1,55 @@
 # Browser store submission materials
 
-Version: **1.0.2**. Publisher: **gulzxeric**. License: **MIT**.
+Version **1.1.0** · Publisher **gulzxeric** · License **MIT**
 
-**Status: prepared; not submitted.** The publisher has not yet registered a Chrome Web Store or Microsoft Edge developer account. Browser UI control was also denied during preparation. No dashboard draft or review submission was created. Account enrollment and any required developer agreement must be completed by the publisher.
+This directory contains listing copy, permission explanations, review instructions, and graphics for Blob Image Downloader's original-image downloads and PDF merging. Store submission and publication are managed separately in the publisher's developer accounts.
 
-## Files to use
+## Materials
 
 | File | Purpose |
 | --- | --- |
-| [Release ZIP](https://github.com/gulzxeric/blob-image-downloader/releases/latest) | Download `blob-image-downloader-v1.0.2.zip`; upload without extracting |
+| `dist/blob-image-downloader-v1.1.0.zip` (generated from the repository root) | Extension package, with `manifest.json` at the ZIP root |
 | [listing.en.md](listing.en.md) | English listing copy |
-| [listing.zh-CN.md](listing.zh-CN.md) | Chinese copy matching the popup language |
-| [privacy-and-permissions.md](privacy-and-permissions.md) | Single purpose, permission justifications, and privacy declarations |
-| [reviewer-notes.md](reviewer-notes.md) | Self-contained review instructions |
-| [screenshot-1280x800.png](assets/screenshot-1280x800.png) | Screenshot-sized graphic featuring the actual popup capture |
-| [promo-440x280.png](assets/promo-440x280.png) | Small promotional tile |
-| [128 × 128 icon](../extension/icons/icon128.png) | Store icon |
+| [listing.zh-CN.md](listing.zh-CN.md) | Chinese listing copy matching the popup |
+| [privacy-and-permissions.md](privacy-and-permissions.md) | Single purpose, five permission explanations, and data handling |
+| [reviewer-notes.md](reviewer-notes.md) | Local image fixture and checks for both output modes |
+| [screenshot-1280x800.png](assets/screenshot-1280x800.png) | Screenshot graphic |
+| [promo-440x280.png](assets/promo-440x280.png) | Promotional tile |
+| [128 × 128 icon](../extension/icons/icon128.png) | Extension icon |
 | [Privacy policy](../PRIVACY.md) | Public privacy statement |
 
-Public privacy URL: `https://github.com/gulzxeric/blob-image-downloader/blob/main/PRIVACY.md`
+The manifest name remains **Blob 图片顺序下载** and the popup language is Simplified Chinese. The 1.1.0 listing describes the added **合并为 PDF** action.
 
-Support URL: `https://github.com/gulzxeric/blob-image-downloader/issues`
+## Prepare a package
 
-Homepage URL: `https://github.com/gulzxeric/blob-image-downloader`
-
-The English listing states that the current popup UI is Simplified Chinese. Do not claim English UI support or add store installation links before approval and publication.
-
-## Chrome Web Store
-
-1. Register or sign in at the [developer dashboard](https://chrome.google.com/webstore/devconsole). Chrome requires a one-time developer registration fee. The publisher must complete verification, truthful account information, and the developer agreement.
-2. Select **Add new item** and upload the release ZIP. Do not upload the source repository ZIP or the localhost-permission test copy.
-3. Fill in the listing with the supplied copy and graphics. Choose a suitable utility/productivity category offered by the dashboard and Simplified Chinese as the primary language.
-4. Complete privacy and permission fields using the supplied explanations. Review the exact current declaration labels before certifying them.
-5. Add the reviewer instructions. Testing the extension requires no account or paid service.
-6. Choose free, public distribution; submit for review with automatic publication after approval if desired.
-
-## Microsoft Edge Add-ons
-
-1. Register in the [Microsoft Edge developer program](https://partner.microsoft.com/dashboard/microsoftedge/overview) with an eligible Microsoft account. Registration has no program fee. The publisher must supply truthful account details and complete agreements and verification.
-2. Create an extension and upload the same release ZIP.
-3. Complete availability, properties, listing, privacy information, and certification notes using these materials. Obtain any required publisher contact details from the verified account, not inferred repository data.
-4. Choose free, public distribution and submit for certification. Preparation alone is not submission; verify the dashboard's submitted or published state.
-
-## Regenerate graphics
+From the repository root:
 
 ```sh
 npm ci
+npm run check
+npm test
 npx playwright install chromium
+npm run test:e2e
+npm run package
+```
+
+Upload the generated extension ZIP, which includes the local PDF library and third-party license notices. The release manifest uses `activeTab`, `scripting`, `downloads`, `storage`, and `offscreen`; the localhost host grant is confined to the browser-test copy.
+
+Follow the current dashboard instructions for the [Chrome Web Store](https://developer.chrome.com/docs/webstore/publish/) or [Microsoft Edge Add-ons](https://learn.microsoft.com/en-us/microsoft-edge/extensions/publish/publish-extension). Review listing details, permission declarations, account requirements, and graphics before submitting.
+
+## Public links
+
+- [Homepage](https://github.com/gulzxeric/blob-image-downloader)
+- [Support](https://github.com/gulzxeric/blob-image-downloader/issues)
+- [Privacy policy](https://github.com/gulzxeric/blob-image-downloader/blob/main/PRIVACY.md)
+- [Release downloads](https://github.com/gulzxeric/blob-image-downloader/releases)
+
+## Graphics
+
+`docs/popup.png` is a real popup capture from the local browser fixture. After updating that image or the presentation in `store/preview.html`, regenerate graphics with:
+
+```sh
 npm run store:assets
 ```
 
-The screenshot graphic includes the real popup capture from the project's browser test. The demo images are locally generated; no user's browsing content or third-party branded images are used.
-
-Sources checked October 1, 2026: [Chrome publishing](https://developer.chrome.com/docs/webstore/publish/), [Chrome listing assets](https://developer.chrome.com/docs/webstore/cws-dashboard-listing/), [Chrome registration](https://developer.chrome.com/docs/webstore/register/), [Chrome privacy fields](https://developer.chrome.com/docs/webstore/cws-dashboard-privacy/), [Edge registration](https://learn.microsoft.com/en-us/microsoft-edge/extensions-chromium/publish/create-dev-account), and [Edge publishing](https://learn.microsoft.com/en-us/microsoft-edge/extensions/publish/publish-extension).
+Set `PLAYWRIGHT_CHROMIUM_EXECUTABLE` if using an existing compatible Chromium. Demo images are generated locally, without user browsing content.

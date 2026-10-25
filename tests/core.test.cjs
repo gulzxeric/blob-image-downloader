@@ -42,3 +42,9 @@ test('progress reports completed downloads separately from accepted requests', (
     { total: 4, complete: 1, failed: 1, pending: 1, skipped: 1, busy: true });
   assert.equal(helpers.summary(null), null);
 });
+
+test('PDF jobs remain busy until the PDF download finishes', () => {
+  const job = { mode: 'pdf', submitting: false, items: [{ state: 'complete' }] };
+  for (const state of ['generating', 'in_progress']) assert.equal(helpers.summary({ ...job, pdf: { state } }).busy, true);
+  for (const state of ['complete', 'failed']) assert.equal(helpers.summary({ ...job, pdf: { state } }).busy, false);
+});

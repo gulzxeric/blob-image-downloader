@@ -7,6 +7,10 @@ No account, subscription, API key, paid site, or third-party service is required
 3. DOM and visual order differ. The first row is blue on the left and gold on the right; the next row is green. Saved sequence: blue PNG, gold JPEG, green WebP.
 4. Click **按顺序下载** (Download in order). Expect a new batch subfolder and three completed images.
 5. During a second batch, close and reopen the popup to verify continued downloads. **停止提交** (Stop submitting) stops later submissions; accepted downloads continue.
+6. Scan again and click **合并为 PDF** (Merge to PDF). Expect one PDF in a new batch subfolder, with three pages ordered blue, gold, then green. Each page is 90 × 60 PDF points, retaining the 120 × 80 image proportions. No separate image files are saved in this mode.
+7. Start another PDF batch, close the popup, then reopen it. Processing continues and the popup shows the final PDF download status.
+8. Increase the submission interval, scan again, start a PDF batch, and click **停止合并** (Stop merging) before collection ends. Expect no incomplete PDF. Rescan and retry to produce the full document.
+9. For a failure case, revoke the first image's URL in the console with `URL.revokeObjectURL(document.images[2].src)`, then scan and merge again. The decoded image can remain visible, but reading its data fails. Expect a failed merge with an error and no incomplete PDF.
 
 ```javascript
 (async () => {
@@ -33,4 +37,6 @@ No account, subscription, API key, paid site, or third-party service is required
 })();
 ```
 
-Blob images in the main page and accessible same-origin iframes with both natural dimensions strictly greater than 50 px are included by default. Cross-origin and opaque sandboxed frames are skipped. No auto-scroll, ordinary HTTP image downloads, or browser-internal page access. Limit: 24 MiB per image. No blanket host permissions or remote executable code.
+Blob images in the main page and accessible same-origin iframes with both natural dimensions strictly greater than 50 px are included by default. Cross-origin and opaque sandboxed frames are skipped. No auto-scroll, ordinary HTTP image downloads, or browser-internal page access. Limit: 24 MiB per source image. PDF mode additionally limits each image to 40 million pixels and the batch to 256 MiB, counting the larger of each source and converted file size. Keep the source tab open during collection. No blanket host permissions or remote executable code.
+
+The `offscreen` permission is used only for a hidden, packaged extension document that decodes images, combines them using the locally bundled PDF library, and holds a temporary download Blob URL. It does not upload content or load remote code.

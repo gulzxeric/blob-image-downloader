@@ -1,81 +1,113 @@
-# Blob Image Downloader
+# Blob Image Downloader & PDF Merger
 
 **English** · [简体中文](README.zh-CN.md)
 
-Save the current page's loaded, visible **blob images** in reading order: top to bottom, then left to right within each row. A lightweight Manifest V3 extension for Chrome and Edge, based on a browser-console download script.
+A Chrome / Edge extension that collects loaded, visible **blob images** from the current webpage in reading order. Save the original images, or merge them into **one PDF with one image per page**.
 
-No build step, no runtime dependencies, and no background scanning of every website. The current popup interface is in Simplified Chinese.
+Version **1.1.0** · Manifest V3 · Local processing · No build step
 
-![Extension popup showing images in download order](docs/popup.png)
+![Extension popup with Scan, Download in order, and Merge to PDF buttons](docs/popup.png)
 
-## Install
+## Features
 
-1. Download and extract the ZIP from the [latest release](https://github.com/gulzxeric/blob-image-downloader/releases/latest), or clone this repository.
+| | Download images | Merge to PDF |
+| --- | --- | --- |
+| Output | One numbered file per image | One PDF for the entire batch |
+| Order | Top to bottom; left to right within each row | The same order, one image per page |
+| Image handling | Original bytes and formats | JPEG embedded directly; other decodable formats converted to PNG |
+| Layout | Original image dimensions | Each page preserves its image's aspect ratio |
+| Closing the popup | Downloads continue | Processing and saving continue |
+| Failed image | Other images can still download | Stops without exporting an incomplete PDF |
+
+The popup interface is Simplified Chinese. Main-page and accessible same-origin iframe images are supported, including nested course viewers.
+
+## Install or update
+
+1. Select **Code → Download ZIP** on GitHub and extract it, or clone this repository:
+
+   ```sh
+   git clone https://github.com/gulzxeric/blob-image-downloader.git
+   ```
+
 2. Open `chrome://extensions` in Chrome or `edge://extensions` in Edge.
-3. Enable **Developer mode**, then select **Load unpacked**.
-4. For a release ZIP, select the extracted folder containing `manifest.json`. For a Git clone, select the `extension` folder.
-5. Pin the extension to the browser toolbar.
+3. Enable **Developer mode** and select **Load unpacked**.
+4. Select this repository's **`extension`** folder, which contains `manifest.json`.
+5. Pin the extension to the toolbar.
 
-You do not need Node.js, npm, or a GitHub account to install it. Store materials are prepared, but the extension has **not yet been submitted to or published in either browser store**.
+If already installed from this folder, update the source and click the extension's **Reload** button on the extensions page. Node.js and npm are only needed for development.
+
+An extension ZIP from [Releases](https://github.com/gulzxeric/blob-image-downloader/releases), when available, can also be extracted and loaded. Select the extracted folder directly containing `manifest.json`. Check its version before installing; the current source version is 1.1.0.
 
 ## Use
 
-1. Open a regular webpage containing blob images. Scroll first to let the desired images load.
-2. Click the extension icon, then **扫描图片** (Scan images). Review the count, dimensions, and order.
-3. Optionally change **文件名前缀** (Filename prefix) and **下载子文件夹** (Download subfolder). Scan again after changing settings.
-4. Select **按顺序下载** (Download in order). The extension rescans the page and creates a separate folder for each batch in your browser's Downloads directory:
+1. Open the webpage and scroll to load the images you need.
+2. Click the extension, then **扫描图片** (Scan images). Review the count, dimensions, and order.
+3. Optionally change the filename prefix, download subfolder, or filtering settings. Scan again after changing settings.
+4. Choose **按顺序下载** (Download in order) for original files, or **合并为 PDF** (Merge to PDF) for one document. Both actions rescan the page before starting.
+5. Check progress in the popup. Hover over failed image rows for details. **打开下载文件夹** opens the browser's Downloads folder.
 
-   ```text
-   Downloads/blob-images/20261001-153000-a12b34/
-     image_001.png
-     image_002.jpg
-     image_003.webp
-   ```
+Example outputs with the default settings:
 
-5. Check the completed, failed, in-progress, and unsubmitted counts. Hover over a failed item for its error.
+```text
+Downloads/blob-images/
+  20261025-153000-a12b34/   # Original-image batch
+    image_001.png
+    image_002.jpg
+    image_003.webp
+  20261025-153100-c56d78/   # PDF batch
+    image.pdf
+```
 
-Downloads continue when the popup closes; reopening it restores the current session's progress. **停止提交** (Stop submitting) stops further images from entering the queue. Downloads already accepted by the browser continue.
+Each batch gets its own folder. The browser controls the main Downloads location.
 
-Keep the source page open. Refreshing, closing, or navigating away from it stops images that have not yet been submitted.
+Keep the source page open while images are collected. You may close the popup and reopen it to check the current session's progress. Refreshing, closing, or navigating away from the source page can stop images that have not yet been processed.
 
-## Selection and ordering
+**停止提交** stops further original-image submissions; accepted browser downloads continue. **停止合并** stops image collection for a PDF and discards the unfinished document. A failed or stopped merge does not export a partial PDF; fix the cause, scan again, and retry.
 
-- Main-page and same-origin iframe `<img>` elements whose `img.src` starts with `blob:` are considered, including nested frames. Embedded course viewers do not require inspecting a slide in DevTools first.
-- Both natural dimensions must be **strictly greater than 50 px** by default. This threshold is adjustable.
-- Unloaded images, images without layout dimensions, hidden or fully transparent images, and images inside hidden ancestors are excluded. Visible fixed-position images are supported.
-- Loaded images outside the viewport are included. The extension does not automatically scroll, wait for lazy loading, access cross-origin or opaque sandboxed iframes, enter Shadow DOM, or collect HTTP images and CSS backgrounds.
-- Images are first ordered by document Y coordinate. A row includes images whose top lies within the configured tolerance of that row's topmost image. Images in the row are then ordered by X coordinate.
-- The default row tolerance is **20 px**. A fixed row anchor avoids the original script's non-transitive fuzzy comparator. Masonry layouts, overlapping images, or nested scroll containers may need a different tolerance.
-- If the same blob URL appears in multiple eligible image elements, each occurrence is numbered separately.
+## PDF behavior
 
-## Original formats and limits
+- One image occupies one page. Portrait and landscape images can be mixed without cropping or stretching.
+- Page sizes follow image dimensions at 96 pixels per inch, scaled down proportionally if needed to stay within the PDF page-size limit. Pixel data is not resized.
+- JPEG data is embedded without recompression. Other formats must be decodable by the browser and are converted locally to PNG; transparency is retained. Animated images use their first frame.
+- The PDF is generated only after every image is added successfully. The popup separately reports image processing and the final PDF download state.
+- The PDF library is bundled locally. No images are uploaded and no remote scripts are loaded.
 
-Image bytes are preserved without transcoding. PNG, JPEG, WebP, GIF, AVIF, and BMP are identified from their signatures. Other supported formats use the declared MIME type; an unknown format receives a `.bin` extension. Filenames are not forced to `.png`.
+## Selection, order, and limits
 
-Blob URLs belong to their source page and can be revoked. A revoked URL produces a failure even when its previously decoded image remains visible.
+Only `<img>` elements whose `src` begins with `blob:` are collected. Images must be loaded, have layout dimensions, and be visible through their ancestor chain. Loaded images outside the viewport are included. Hidden or fully transparent elements, inaccessible cross-origin frames, and opaque sandboxed frames are excluded.
 
-The per-image limit is **24 MiB**. Larger images are not downloaded and are reported as failed, keeping extension messages and memory use bounded. Images are read and submitted one at a time, with a default **300 ms** interval adjustable from 100 to 3000 ms.
+Images are sorted by document Y coordinate, grouped into rows, then sorted by X coordinate within each row. Each row is anchored to its topmost image; the default row tolerance is 20 px. Repeated occurrences of the same blob URL are treated as separate images.
 
-Browser-internal pages, extension stores, and other protected pages cannot be scanned. For local file webpages, enable **Allow access to file URLs** in the extension's browser settings. Browser or enterprise download policies can still block a save. Your browser controls the main Downloads location; the extension specifies a relative subfolder.
+| Setting or limit | Value |
+| --- | --- |
+| Minimum natural dimensions | Both width and height strictly greater than 50 px by default; adjustable |
+| Row tolerance | 20 px by default; adjustable from 0–200 px |
+| Submission interval | 300 ms by default; adjustable from 100–3000 ms |
+| Source image size | At most 24 MiB per image in either mode |
+| PDF image dimensions | At most 40 million pixels per image |
+| PDF batch size | At most 256 MiB, counting the larger of each source and converted file size |
 
-Progress is session-only. Submitted downloads can be reconciled after the popup reopens or the extension service worker sleeps. Unfinished batches are not restored after a browser restart.
+Original downloads preserve image bytes. PNG, JPEG, WebP, GIF, AVIF, and BMP are detected by signature; other supported formats use their declared MIME type, and unknown formats use `.bin`.
+
+The extension does not automatically scroll or wait for lazy loading, collect ordinary HTTP images or CSS backgrounds, or enter Shadow DOM. Revoked blob URLs can fail even if decoded images remain visible. Browser-internal pages and extension stores cannot be scanned. Local file webpages require **Allow access to file URLs** in the extension's settings.
+
+Progress is stored for the current browser session. Unfinished batches are not restored after a browser restart. Browser download policies may block or interrupt saves.
 
 ## Permissions and privacy
 
 | Permission | Purpose |
 | --- | --- |
-| `activeTab` | Temporarily access the current webpage after you click the extension |
-| `scripting` | Collect and read blob images in the page and its same-origin iframes |
-| `downloads` | Save image files and track actual browser download outcomes |
-| `storage` | Store preferences locally and progress for the current browser session |
+| `activeTab` | Temporarily access the webpage selected by clicking the extension |
+| `scripting` | Collect and read blob images in that page and its accessible same-origin iframes |
+| `downloads` | Save images or PDFs and track browser download results |
+| `storage` | Store preferences locally and task metadata for the current session |
+| `offscreen` | Decode images, assemble PDFs, and manage temporary download Blob URLs in a hidden extension document |
 
-There are no blanket host permissions, remote scripts, analytics, advertisements, or developer-operated upload endpoints. Image bytes are passed locally between the page, extension, and browser download manager. Only task metadata is stored in session storage.
-
-Read the [privacy policy](PRIVACY.md) for details. The browser itself retains normal download history.
+No persistent all-site access, analytics, ads, remote executable code, or developer-operated upload endpoints. Image and PDF bytes stay in browser memory during processing; extension storage contains preferences and task metadata. See [PRIVACY.md](PRIVACY.md).
 
 ## Development
 
-Use Node.js 22 or later. The extension source can be loaded directly.
+Use Node.js 22 or later:
 
 ```sh
 npm ci
@@ -86,16 +118,24 @@ npm run test:e2e
 npm run package
 ```
 
-End-to-end tests use an isolated temporary browser profile and a localhost image fixture. The test copy temporarily grants `http://127.0.0.1/*` access to simulate the permission normally obtained by clicking the toolbar button. **The release manifest does not include this permission.** Tests produce a `blob-images-e2e` folder in the test browser's downloads location and remove their temporary profile after closing.
+`npm run package` creates **`dist/blob-image-downloader-v1.1.0.zip`**, with `manifest.json` at the ZIP root. The source can be loaded directly without building. Bundled PDF dependencies and licenses are in [extension/vendor](extension/vendor/README.md).
 
-Tests cover course iframes with no outer-page images, nested frame coordinates and borders, inner and outer scrolling, hidden and inaccessible frames, filtering, visual ordering independent of DOM order, fixed positioning, original bytes and formats, revoked URLs, stopping submission, popup interactions, and continued downloads after closing the popup.
+Browser tests use an isolated temporary profile and local fixtures. The test copy temporarily grants localhost access to simulate the toolbar's page grant; the release manifest has no such host permission. Tests may create a `blob-images-e2e` directory in the test browser's Downloads location. Set `PLAYWRIGHT_CHROMIUM_EXECUTABLE` to use an existing compatible Chromium executable if needed.
 
-`npm run package` creates `dist/blob-image-downloader-v1.0.2.zip` with `manifest.json` and the MIT license at the ZIP root. Regenerate icons with `python scripts/generate-icons.py` (Python standard library only); regenerate store graphics with `npm run store:assets`.
+Tests cover iframe discovery, visibility filtering, reading order, original image bytes, revoked URLs, stopping, popup closure, PDF page count and colors, JPEG preservation, WebP conversion, transparency, and mixed page proportions.
 
-See [store submission materials](store/README.md) for listing copy, permission explanations, review instructions, and graphics.
+## Project files
 
-API references: [Chrome downloads](https://developer.chrome.com/docs/extensions/reference/api/downloads), [script injection](https://developer.chrome.com/docs/extensions/reference/api/scripting), and [session storage](https://developer.chrome.com/docs/extensions/reference/api/storage).
+| Path | Contents |
+| --- | --- |
+| `extension/` | Loadable extension source |
+| `tests/` | Unit tests, browser tests, and local fixtures |
+| `scripts/` | Validation, ZIP packaging, and asset generation |
+| `docs/` | Popup screenshot |
+| `store/` | Store listing copy, permission explanations, and review instructions |
+
+See [CHANGELOG.md](CHANGELOG.md) for changes and [store/README.md](store/README.md) for submission materials. Report problems through [GitHub Issues](https://github.com/gulzxeric/blob-image-downloader/issues).
 
 ## License
 
-[MIT](LICENSE) © 2026 gulzxeric.
+[MIT](LICENSE) © 2026 gulzxeric. Bundled libraries retain their own license notices in `extension/vendor`.

@@ -4,6 +4,7 @@ const os = require('node:os');
 const path = require('node:path');
 const http = require('node:http');
 const { chromium } = require('playwright');
+const { PDFDocument, PDFName, decodePDFRawStream } = require('pdf-lib');
 const root = path.resolve(__dirname, '..');
 const extension = path.join(root, 'extension');
 const artifacts = path.join(root, '.artifacts');
@@ -123,6 +124,29 @@ async function until(callback, timeout = 20000) {
       const [download] = await worker.evaluate(async id => chrome.downloads.search({ id }), done.items[index].downloadId);
       assert.deepEqual(Array.from(fs.readFileSync(download.filename)), expected[id], 'downloaded bytes must match original blob');
     }
+    // A PDF uses the same visual order and saves one document, not five images.
+    const pdfStart = await message('START', { options, mode: 'pdf' });
+    assert.equal(pdfStart.ok, true, pdfStart.error);
+    const pdfDone = await until(async () => { const { job } = await message('GET_STATUS'); return job && !job.busy && job; });
+    assert.equal(pdfDone.pdf.state, 'complete', JSON.stringify(pdfDone));
+    assert.equal(pdfDone.complete, 5);
+    assert.ok(pdfDone.items.every(item => !item.downloadId));
+    const [pdfDownload] = await worker.evaluate(async id => chrome.downloads.search({ id }), pdfDone.pdf.downloadId);
+    const pdfBytes = fs.readFileSync(pdfDownload.filename);
+    fs.writeFileSync(path.join(artifacts, 'ordered-images.pdf'), pdfBytes);
+    const pdf = await PDFDocument.load(pdfBytes);
+    assert.equal(pdf.getPageCount(), 5);
+    const colors = [[33,91,221], null, [116,74,198], [36,140,115], [85,85,85]];
+    for (const [index, page] of pdf.getPages().entries()) {
+      assert.deepEqual(page.getSize(), { width: 90, height: 60 });
+      const objects = page.node.Resources().lookup(PDFName.of('XObject'));
+      const stream = objects.lookup(objects.keys()[0]);
+      if (index === 1) assert.deepEqual(Array.from(stream.getContents()), expected.right, 'JPEG is embedded without recompression');
+      else {
+        const pixel = Array.from(decodePDFRawStream(stream).decode().slice(0, 3));
+        pixel.forEach((value, channel) => assert.ok(Math.abs(value - colors[index][channel]) <= 3, `page ${index + 1} has the expected image/color`));
+      }
+    }
     // Scroll-invariance of document coordinates.
     await fixture.evaluate(() => scrollTo(0, 300));
     const scrolled = await message('SCAN', { options });
@@ -135,6 +159,12 @@ async function until(callback, timeout = 20000) {
     assert.equal(failed.failed, 1);
     assert.equal(failed.complete, 4);
     assert.equal(failed.items[0].state, 'failed');
+    await message('START', { options, mode: 'pdf' });
+    const pdfFailed = await until(async () => { const { job } = await message('GET_STATUS'); return job && !job.busy && job; });
+    assert.equal(pdfFailed.pdf.state, 'failed');
+    assert.equal(pdfFailed.pdf.downloadId, undefined, 'never silently export an incomplete PDF');
+    assert.match(pdfFailed.pdf.error, /第 1 张图片/);
+    assert.equal(pdfFailed.skipped, 4);
     // Stop should leave pending browser saves running and mark unsubmitted items.
     await message('START', { options: { ...options, interval: 1000 } });
     await until(async () => (await message('GET_STATUS')).job.items[0].state === 'failed');
@@ -161,6 +191,45 @@ async function until(callback, timeout = 20000) {
     await reopened.goto(`chrome-extension://${extensionId}/popup.html`);
     await until(async () => (await reopened.locator('#status').textContent()).includes('已保存 4 张 · 失败 1 张 · 保存中 0 张'));
     assert.equal(await reopened.locator('#result-heading').textContent(), '本次下载已结束');
+    // Restore valid images, start PDF through the UI, and close the popup.
+    await fixture.reload();
+    await fixture.evaluate(() => window.ready);
+    await fixture.evaluate(async () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 60; canvas.height = 180;
+      const blob = await new Promise(resolve => canvas.toBlob(resolve));
+      const image = document.getElementById('fixed');
+      image.src = URL.createObjectURL(blob); await image.decode();
+    });
+    await reopened.locator('#scan').click();
+    await until(async () => (await reopened.locator('#image-count').textContent()) === '5 张');
+    await reopened.locator('body').screenshot({ path: path.join(artifacts, 'popup-pdf.png') });
+    await reopened.locator('#pdf').click();
+    await until(async () => !(await reopened.locator('#stop').isHidden()));
+    await reopened.close();
+    const pdfStatus = await browser.newPage();
+    await pdfStatus.goto(`chrome-extension://${extensionId}/popup.html`);
+    const pdfMessage = (type, extra = {}) => pdfStatus.evaluate(async args => chrome.runtime.sendMessage(args), { type, tabId, ...extra });
+    const backgroundPdf = await until(async () => { const { job } = await pdfMessage('GET_STATUS'); return job && !job.busy && job; });
+    assert.equal(backgroundPdf.pdf.state, 'complete', JSON.stringify(backgroundPdf));
+    const [backgroundDownload] = await worker.evaluate(async id => chrome.downloads.search({ id }), backgroundPdf.pdf.downloadId);
+    const mixedPdfBytes = fs.readFileSync(backgroundDownload.filename);
+    fs.writeFileSync(path.join(artifacts, 'mixed-sizes.pdf'), mixedPdfBytes);
+    const mixedPdf = await PDFDocument.load(mixedPdfBytes);
+    assert.deepEqual(mixedPdf.getPages()[2].getSize(), { width: 45, height: 135 }, 'portrait images keep their own aspect ratio');
+    const transparentImages = mixedPdf.getPages()[2].node.Resources().lookup(PDFName.of('XObject'));
+    assert.ok(transparentImages.lookup(transparentImages.keys()[0]).dict.has(PDFName.of('SMask')), 'transparent PNG keeps its alpha mask');
+    // Cancel a PDF after an image has entered the document.
+    await pdfMessage('START', { options: { ...options, interval: 1000 }, mode: 'pdf' });
+    await until(async () => (await pdfMessage('GET_STATUS')).job.complete === 1);
+    await pdfMessage('STOP');
+    const cancelledPdf = await until(async () => { const { job } = await pdfMessage('GET_STATUS'); return job && !job.busy && job; });
+    assert.equal(cancelledPdf.pdf.state, 'failed');
+    assert.equal(cancelledPdf.pdf.downloadId, undefined);
+    assert.ok(cancelledPdf.skipped > 0);
+    assert.match(cancelledPdf.pdf.error, /已停止合并/);
+    assert.equal(await worker.evaluate(async id => (await pdfRequest('PDF_HAS', id)).exists, cancelledPdf.id), false, 'cancelled PDF memory is released');
+    console.log('PDF E2E passed: page order/colors, JPEG bytes, WebP conversion, page ratios, transparency, failed blobs, stopping and popup closure.');
     console.log('E2E passed: course iframe discovery and byte preservation, filtering, visual order, fixed images, formats, scrolling, revoked blobs, stopping, popup UI and continued downloads after closing popup.');
   } finally {
     await browser?.close();

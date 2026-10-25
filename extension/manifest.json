@@ -1,11 +1,11 @@
 {
   "manifest_version": 3,
   "name": "Blob 图片顺序下载",
-  "description": "按从上到下、从左到右的顺序批量保存当前网页已加载的 blob 图片。",
-  "version": "1.0.2",
+  "description": "按阅读顺序下载网页 blob 图片，或将全部图片合并为一个 PDF。",
+  "version": "1.1.0",
   "homepage_url": "https://github.com/gulzxeric/blob-image-downloader",
   "minimum_chrome_version": "120",
-  "permissions": ["activeTab", "scripting", "downloads", "storage"],
+  "permissions": ["activeTab", "scripting", "downloads", "storage", "offscreen"],
   "action": {
     "default_title": "Blob 图片顺序下载",
     "default_popup": "popup.html",

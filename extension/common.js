@@ -70,7 +70,7 @@
     const pending = job.items.filter(item => item.state === "in_progress").length;
     const skipped = job.items.filter(item => item.state === "skipped").length;
     return { ...job, total: job.items.length, complete, failed, pending, skipped,
-      busy: job.submitting || Boolean(job.stopping) || pending > 0 };
+      busy: job.submitting || Boolean(job.stopping) || pending > 0 || ["generating", "in_progress"].includes(job.pdf?.state) };
   }
   const api = { defaults, safeName, normalizeOptions, sortImages, extensionFor, detectMime, batchFolder, filename, summary };
   globalThis.BlobImages = api;

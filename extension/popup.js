@@ -14,13 +14,16 @@ function buttons() {
   $("scan").disabled = busy || !Number.isInteger(tabId);
   $("download").disabled = busy || !scanned?.length;
   $("download").hidden = Boolean(currentJob?.submitting);
+  $("pdf").disabled = busy || !scanned?.length;
+  $("pdf").hidden = Boolean(currentJob?.submitting);
   $("stop").hidden = !currentJob?.submitting;
+  $("stop").textContent = currentJob?.mode === "pdf" ? "停止合并" : "停止提交";
   $("stop").disabled = working;
   for (const input of $("settings").elements) input.disabled = Boolean(busy);
 }
 
-function renderList(items, downloading) {
-  const labels = { queued: "待提交", in_progress: "保存中", complete: "已保存", failed: "失败", skipped: "未提交" };
+function renderList(items, downloading, pdf = false) {
+  const labels = { queued: "待提交", in_progress: "保存中", complete: pdf ? "已加入 PDF" : "已保存", failed: "失败", skipped: "未提交" };
   $("image-list").replaceChildren(...items.map((item, index) => {
     const li = document.createElement("li");
     const detail = document.createElement("span");
@@ -49,7 +52,14 @@ function renderJob(job) {
   $("progress").value = job.complete + job.failed + job.skipped;
   $("path").hidden = false;
   $("path").textContent = `下载目录 / ${job.folder}/`;
-  renderList(job.items, true);
+  if (job.mode === "pdf") {
+    const labels = { collecting: "正在按顺序处理图片", generating: "正在生成 PDF", in_progress: "正在保存 PDF", complete: "PDF 已保存", failed: "PDF 未完成" };
+    $("result-heading").textContent = labels[job.pdf.state] || "PDF 未完成";
+    $("status").textContent = `已加入 ${job.complete}/${job.total} 张 · 失败 ${job.failed} 张 · 未提交 ${job.skipped} 张。` +
+      (job.pdf.error || (job.pdf.state === "complete" ? "全部图片已按顺序合并，每张一页。" : "关闭弹窗后仍会继续，请保持来源页面打开。"));
+    $("path").textContent = `PDF / ${job.pdf.filename}`;
+  }
+  renderList(job.items, true, job.mode === "pdf");
   buttons();
 }
 
@@ -80,13 +90,16 @@ $("scan").addEventListener("click", () => action(async settings => {
   currentJob = null;
   $("image-count").textContent = `${scanned.length} 张`;
   $("result-heading").textContent = scanned.length ? "按这个顺序下载" : "没有找到符合条件的图片";
-  $("status").textContent = scanned.length ? "下载时会重新扫描页面，每批图片放进独立文件夹。" : "先让图片加载，再试一次。支持主页面及同源 iframe 中的 blob 图片。";
+  $("status").textContent = scanned.length ? "可下载原图，或按此顺序合并为 PDF（每张图片一页）。开始时会重新扫描。" : "先让图片加载，再试一次。支持主页面及同源 iframe 中的 blob 图片。";
   $("progress").hidden = true;
   $("path").hidden = true;
   renderList(scanned, false);
 }));
 $("download").addEventListener("click", () => action(async settings => {
   renderJob((await request("START", { options: settings })).job);
+}));
+$("pdf").addEventListener("click", () => action(async settings => {
+  renderJob((await request("START", { options: settings, mode: "pdf" })).job);
 }));
 $("stop").addEventListener("click", () => action(async () => { renderJob((await request("STOP")).job); }));
 $("open-downloads").addEventListener("click", () => chrome.downloads.showDefaultFolder());
